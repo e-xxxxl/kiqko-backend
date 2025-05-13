@@ -5,6 +5,7 @@ require('dotenv').config();
 
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes'); // ✅ Import userRoutes
+// const profileRouter = require('./routes/profile');
 const app = express();
 
 // Middleware
@@ -14,6 +15,8 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes); // ✅ Add this line
+// Make sure to import and use the profile routes
+
 
 // DB connection
 mongoose.connect(process.env.MONGO_URI, {

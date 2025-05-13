@@ -10,9 +10,19 @@ const userSchema = new mongoose.Schema({
   isVerified: {
     type: Boolean,
     default: false,
-  },
+  }, profile: {
+    gender: String,
+    birthDate: Date,
+    ethnicity: String,
+    maritalStatus: String,
+    height: String,
+    bodyType: String,
+    hasKids: String,
+    wantsKids: String,
+    hereFor: String,
+    wouldRelocate: String
+  }
 }, { timestamps: true });
-
 // Hash password before saving
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
