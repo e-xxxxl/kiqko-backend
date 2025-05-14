@@ -15,7 +15,7 @@ const transporter = nodemailer.createTransport({
 
 // Register with OTP
 exports.register = async (req, res) => {
-  const { username, email, password } = req.body;
+  const { username, email, password,gende } = req.body;
 
   try {
     // Check if user exists
@@ -30,6 +30,7 @@ exports.register = async (req, res) => {
       username,
       email,
       password,
+      gender,
       otp,
       otpExpires: Date.now() + 10 * 60 * 1000, // 10 minutes
       isVerified: false,

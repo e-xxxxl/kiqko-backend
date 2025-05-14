@@ -51,3 +51,50 @@ exports.deleteUser = async (req, res) => {
     });
   }
 };
+
+
+exports.updateLocation = async (req, res) => {
+  const { city, state, country } = req.body;
+  const { userId } = req.params;
+
+  try {
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        location: {
+          city,
+          state,
+          country
+        }
+      },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({
+      message: 'Location updated successfully',
+      user: updatedUser
+    });
+  } catch (err) {
+    console.error('Error updating location:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+exports.getUserLocation = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId).select('location');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(user.location);
+  } catch (err) {
+    console.error('Error fetching location:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

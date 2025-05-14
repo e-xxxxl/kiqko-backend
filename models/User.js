@@ -5,6 +5,7 @@ const userSchema = new mongoose.Schema({
   username: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
+    gender: { type: String },
   otp: String,
   otpExpires: Date,
   isVerified: {
@@ -22,7 +23,12 @@ const userSchema = new mongoose.Schema({
     wantsKids: String,
     hereFor: String,
     wouldRelocate: String
-  }
+  }, location: {
+    city: String,
+    state: String,
+    country: String
+  }, lastActive: { type: Date, default: Date.now },
+  isOnline: { type: Boolean, default: false }
 }, { timestamps: true });
 // Hash password before saving
 userSchema.pre('save', async function (next) {
@@ -36,5 +42,7 @@ userSchema.pre('save', async function (next) {
 userSchema.methods.comparePassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
+
+
 
 module.exports = mongoose.model('User', userSchema);
