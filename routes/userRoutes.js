@@ -6,6 +6,7 @@ const profileController = require('../controllers/profileController');
 
 
 router.get('/profile/:id', userController.getUserProfile);
+router.delete('/delete/:id', userController.deleteUser);
 router.put('/:userId', profileController.updateProfile);
 router.get('/profilee/:userId', profileController.getProfile2); // Make sure this line is present
 

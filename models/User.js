@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema({
   }, profile: {
     gender: String,
     birthDate: Date,
+     age: Number,
     ethnicity: String,
     maritalStatus: String,
     height: String,
