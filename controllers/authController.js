@@ -177,3 +177,28 @@ exports.verifyEmailWithOtp = async (req, res) => {
   }
 };
 
+exports.resetPassword = async (req, res) => {
+    const { userId, currentPassword, newPassword } = req.body;
+
+    try {
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        // Verify current password
+        const isMatch = await user.comparePassword(currentPassword);
+        if (!isMatch) {
+            return res.status(400).json({ success: false, message: 'Current password is incorrect' });
+        }
+
+        // Update password
+        user.password = newPassword;
+        await user.save();
+
+        res.status(200).json({ success: true, message: 'Password reset successful' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
