@@ -11,7 +11,17 @@ const userSchema = new mongoose.Schema({
   isVerified: {
     type: Boolean,
     default: false,
-  }, profile: {
+  },photos: [
+  {
+    url: String,
+    caption: String,
+    isMain: {
+      type: Boolean,
+      default: false
+    }
+  }
+]
+, profile: {
     gender: String,
     birthDate: Date,
      age: Number,
@@ -22,7 +32,16 @@ const userSchema = new mongoose.Schema({
     hasKids: String,
     wantsKids: String,
     hereFor: String,
-    wouldRelocate: String
+    wouldRelocate: String,
+    headline: String,
+     compliment: String,
+     about: String,
+     dealbreakers: {
+  type: [String],
+  
+  default: []
+}
+
   }, location: {
     city: String,
     state: String,

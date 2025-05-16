@@ -11,5 +11,9 @@ router.put('/:userId', profileController.updateProfile);
 router.get('/profilee/:userId', profileController.getProfile2); // Make sure this line is present
 router.post('/update-location/:userId', userController.updateLocation);
 router.get('/location/:userId', userController.getUserLocation);
+router.post('/headline/:userId', profileController.updateHeadline);
+router.post('/compliment/:userId', profileController.updateCompliment);
+router.post('/dealbreaker/:id', profileController.updateDealbreaker);
 
+router.post('/about/:id', profileController.updateAbout);
 module.exports = router;
