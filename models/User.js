@@ -30,8 +30,8 @@ const userSchema = new mongoose.Schema({
   type: [String],
   
   default: []
-},photo: String,          // Add this
-  photoPublicId: String 
+},profilephoto: String,          // Add this
+ profilephotoPublicId: String 
 
   }, location: {
     city: String,

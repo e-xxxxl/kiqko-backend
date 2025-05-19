@@ -158,8 +158,8 @@ exports.uploadProfilePhoto = async (req, res) => {
     const user = await User.findByIdAndUpdate(
       userId,
       { 
-        'profile.photo': result.secure_url,
-        'profile.photoPublicId': result.public_id 
+        'profile.profilephoto': result.secure_url,
+        'profile.profilephotoPublicId': result.public_id 
       },
       { new: true }
     );
