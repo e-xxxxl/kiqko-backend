@@ -206,13 +206,13 @@ exports.deleteProfilePhoto = async (req, res) => {
     }
 
     // Delete from Cloudinary if public_id exists
-    if (user.profile.photoPublicId) {
-      await cloudinary.uploader.destroy(user.profile.photoPublicId);
+    if (user.profile.profilephotoPublicId) {
+      await cloudinary.uploader.destroy(user.profile.profilephotoPublicId);
     }
 
     // Remove photo from user document
-    user.profile.photo = undefined;
-    user.profile.photoPublicId = undefined;
+    user.profile.profilephoto = undefined;
+    user.profile.profilephotoPublicId = undefined;
     await user.save();
 
     res.status(200).json({ message: 'Profile photo deleted successfully' });
