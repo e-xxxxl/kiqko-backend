@@ -11,17 +11,7 @@ const userSchema = new mongoose.Schema({
   isVerified: {
     type: Boolean,
     default: false,
-  },photos: [
-  {
-    url: String,
-    caption: String,
-    isMain: {
-      type: Boolean,
-      default: false
-    }
-  }
-]
-, profile: {
+  }, profile: {
     gender: String,
     birthDate: Date,
      age: Number,
@@ -40,7 +30,8 @@ const userSchema = new mongoose.Schema({
   type: [String],
   
   default: []
-}
+},photo: String,          // Add this
+  photoPublicId: String 
 
   }, location: {
     city: String,

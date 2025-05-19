@@ -1,5 +1,9 @@
 // controllers/profileController.js
 const User = require('../models/User');
+const cloudinary = require('../config/cloudinary');
+const multer = require('multer');
+
+const upload = multer({ storage: multer.memoryStorage() }).single('profilePhoto');
 
 // Get user profile
 exports.getProfile2 = async (req, res) => {
@@ -121,4 +125,97 @@ exports.updateAbout = async (req, res) => {
 };
 
 
+
+
+
+// Upload profile photo
+exports.uploadProfilePhoto = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    // Convert buffer to data URI for Cloudinary
+    const b64 = Buffer.from(req.file.buffer).toString("base64");
+    const dataURI = "data:" + req.file.mimetype + ";base64," + b64;
+
+    // Upload to Cloudinary
+    const result = await cloudinary.uploader.upload(dataURI, {
+      folder: 'profile-photos',
+      transformation: [
+        { width: 500, height: 500, crop: 'fill', gravity: 'face' }
+      ]
+    });
+
+    console.log("Cloudinary upload result:", result); // Debug log
+
+    // Update user's profile photo in database
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { 
+        'profile.photo': result.secure_url,
+        'profile.photoPublicId': result.public_id 
+      },
+      { new: true }
+    );
+
+    console.log("Updated user:", user); // Debug log
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({
+      message: 'Profile photo uploaded successfully',
+      photoUrl: result.secure_url
+    });
+  } catch (err) {
+    console.error('Profile photo upload error:', err);
+    res.status(500).json({ 
+      message: 'Error uploading profile photo',
+      error: err.message 
+    });
+  }
+};
+
+// Middleware to handle file upload
+exports.uploadMiddleware = (req, res, next) => {
+  upload(req, res, function(err) {
+    if (err instanceof multer.MulterError) {
+      return res.status(400).json({ message: 'File upload error' });
+    } else if (err) {
+      return res.status(500).json({ message: 'Server error' });
+    }
+    next();
+  });
+};
+
+// Delete profile photo
+exports.deleteProfilePhoto = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Delete from Cloudinary if public_id exists
+    if (user.profile.photoPublicId) {
+      await cloudinary.uploader.destroy(user.profile.photoPublicId);
+    }
+
+    // Remove photo from user document
+    user.profile.photo = undefined;
+    user.profile.photoPublicId = undefined;
+    await user.save();
+
+    res.status(200).json({ message: 'Profile photo deleted successfully' });
+  } catch (err) {
+    console.error('Profile photo delete error:', err);
+    res.status(500).json({ message: 'Error deleting profile photo', error: err.message });
+  }
+};
 

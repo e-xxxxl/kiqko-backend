@@ -14,6 +14,17 @@ router.get('/location/:userId', userController.getUserLocation);
 router.post('/headline/:userId', profileController.updateHeadline);
 router.post('/compliment/:userId', profileController.updateCompliment);
 router.post('/dealbreaker/:id', profileController.updateDealbreaker);
-
 router.post('/about/:id', profileController.updateAbout);
+
+router.post(
+  '/upload-photo/:userId',
+  profileController.uploadMiddleware,
+  profileController.uploadProfilePhoto
+);
+
+router.delete(
+  '/delete-photo/:userId',
+  profileController.deleteProfilePhoto
+);
+
 module.exports = router;
