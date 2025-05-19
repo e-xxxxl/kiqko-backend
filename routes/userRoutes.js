@@ -27,4 +27,13 @@ router.delete(
   profileController.deleteProfilePhoto
 );
 
+// router.get('/similar/:userId', profileController.getSimilarUsers);
+
+router.get('/similar/:userId', profileController.getOtherUsers)
+router.get('/online-count', profileController.getOnlineUsersCount);
+router.put('/online-status/:userId', profileController.updateOnlineStatus);
+
+
+router.get('/similar-users/:userId', profileController.getOtherUsers);
+
 module.exports = router;
