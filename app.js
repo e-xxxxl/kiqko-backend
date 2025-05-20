@@ -9,7 +9,12 @@ const userRoutes = require('./routes/userRoutes'); // ✅ Import userRoutes
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173', // Your frontend origin
+  credentials: true,               // Allow cookies/auth headers
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Best practice to explicitly list allowed methods
+  allowedHeaders: ['Content-Type', 'Authorization'], // Best practice to explicitly list allowed headers
+}));
 app.use(express.json());
 
 // Routes
@@ -17,10 +22,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes); // ✅ Add this line
 // Make sure to import and use the profile routes
 
-app.use(cors({
-  origin: 'http://localhost:5173',
-  credentials: true
-}));
+
 
 // DB connection
 mongoose.connect(process.env.MONGO_URI, {

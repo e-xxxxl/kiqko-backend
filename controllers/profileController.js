@@ -530,3 +530,58 @@ exports.mediaUploadMiddleware = (req, res, next) => {
     next();
   });
 };
+
+// Get profile visibility status
+exports.getProfileVisibility = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({
+      isHidden: user.profile?.isHidden || false
+    });
+
+  } catch (err) {
+    console.error('Error getting profile visibility:', err);
+    res.status(500).json({ 
+      message: 'Error getting profile status',
+      error: err.message 
+    });
+  }
+};
+
+// Update profile visibility
+exports.updateProfileVisibility = async (req, res) => {
+  try {
+    const { isHidden } = req.body;
+    const userId = req.params.userId;
+
+    // Explicitly set headers
+    res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
+    res.header('Access-Control-Allow-Credentials', 'true');
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { 'profile.isHidden': isHidden },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({
+      message: `Profile ${isHidden ? 'hidden' : 'unhidden'} successfully`,
+      isHidden: user.profile.isHidden
+    });
+
+  } catch (err) {
+    console.error('Error updating profile visibility:', err);
+    res.status(500).json({ 
+      message: 'Error updating profile visibility',
+      error: err.message 
+    });
+  }
+};

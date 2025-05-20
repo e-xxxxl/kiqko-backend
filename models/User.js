@@ -26,6 +26,10 @@ const userSchema = new mongoose.Schema({
     headline: String,
      compliment: String,
      about: String,
+      isHidden: { 
+    type: Boolean,
+    default: false 
+  },
      media: [{
     url: String,
     publicId: String,

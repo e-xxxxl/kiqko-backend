@@ -55,4 +55,8 @@ router.get('/:userId/media',
 router.put('/:userId/media/order', 
   profileController.updateMediaOrder
 ); 
+
+
+router.get('/:userId/profile-status', profileController.getProfileVisibility);
+router.put('/:userId/hide-profile', profileController.updateProfileVisibility);
 module.exports = router;
