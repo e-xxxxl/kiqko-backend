@@ -7,10 +7,10 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes'); // ✅ Import userRoutes
 // const profileRouter = require('./routes/profile');
 const app = express();
-
+// https://kiqko-gulz.vercel.app
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:5173', // Your frontend origin
+  origin: 'https://kiqko-gulz.vercel.app', // Your frontend origin
   credentials: true,               // Allow cookies/auth headers
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Best practice to explicitly list allowed methods
   allowedHeaders: ['Content-Type', 'Authorization'], // Best practice to explicitly list allowed headers
