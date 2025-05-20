@@ -7,6 +7,14 @@ const mongoose = require('mongoose');
 
 
 const upload = multer({ storage: multer.memoryStorage() }).single('profilePhoto');
+// Replace the existing upload configuration with:
+const mediaUpload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit per file
+    files: 10 // Max 10 files at once
+  }
+}).array('media', 10); // 'media' is the field name, 10 is max count
 
 // Get user profile
 exports.getProfile2 = async (req, res) => {
@@ -26,14 +34,20 @@ exports.getProfile2 = async (req, res) => {
 exports.updateProfile = async (req, res) => {
   try {
     const userId = req.params.userId;
-    const profileData = req.body;
+    const profileUpdates = req.body;
 
     console.log('Updating user ID:', userId);
-    console.log('Profile Data:', profileData);
+    console.log('Profile Updates:', profileUpdates);
+
+    // Create an update object with only the fields that need to be updated
+    const updateFields = {};
+    Object.keys(profileUpdates).forEach(field => {
+      updateFields[`profile.${field}`] = profileUpdates[field];
+    });
 
     const user = await User.findByIdAndUpdate(
       userId,
-      { $set: { profile: profileData } },
+      { $set: updateFields },
       { new: true }
     ).select('profile');
 
@@ -41,7 +55,7 @@ exports.updateProfile = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    console.log('Updated User Profile:', user.profile); // Add this
+    console.log('Updated User Profile:', user.profile);
 
     res.json(user.profile);
   } catch (err) {
@@ -49,6 +63,7 @@ exports.updateProfile = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
 
 // Update only headline
 exports.updateHeadline = async (req, res) => {
@@ -358,4 +373,160 @@ exports.updateOnlineStatus = async (req, res) => {
     console.error('Error updating online status:', err);
     res.status(500).json({ message: 'Server error' });
   }
+};
+
+
+// Upload media
+exports.uploadMedia = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const files = req.files; // Using multer's array upload
+    
+    if (!files || files.length === 0) {
+      return res.status(400).json({ message: 'No files uploaded' });
+    }
+
+    const uploadedMedia = [];
+    
+    // Process each file
+    for (const file of files) {
+      // Convert buffer to data URI for Cloudinary
+      const b64 = Buffer.from(file.buffer).toString("base64");
+      const dataURI = "data:" + file.mimetype + ";base64," + b64;
+
+      // Determine resource type based on mimetype
+      const resourceType = file.mimetype.startsWith('video/') ? 'video' : 'image';
+
+      // Upload to Cloudinary
+      const result = await cloudinary.uploader.upload(dataURI, {
+        folder: 'user-media',
+        resource_type: resourceType
+      });
+
+      uploadedMedia.push({
+        url: result.secure_url,
+        publicId: result.public_id,
+        mediaType: resourceType
+      });
+    }
+
+    // Update user's media array
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $push: { 'profile.media': { $each: uploadedMedia } } },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({
+      message: 'Media uploaded successfully',
+      media: uploadedMedia
+    });
+  } catch (err) {
+    console.error('Media upload error:', err);
+    res.status(500).json({ 
+      message: 'Error uploading media',
+      error: err.message 
+    });
+  }
+};
+
+// Delete media
+exports.deleteMedia = async (req, res) => {
+  try {
+    const { userId, mediaId } = req.params;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Find the media to delete
+    const mediaItem = user.profile.media.id(mediaId);
+    if (!mediaItem) {
+      return res.status(404).json({ message: 'Media not found' });
+    }
+
+    // Delete from Cloudinary
+    await cloudinary.uploader.destroy(mediaItem.publicId, {
+      resource_type: mediaItem.mediaType === 'video' ? 'video' : 'image'
+    });
+
+    // Remove from user's media array
+    user.profile.media.pull(mediaId);
+    await user.save();
+
+    res.status(200).json({ message: 'Media deleted successfully' });
+  } catch (err) {
+    console.error('Media delete error:', err);
+    res.status(500).json({ 
+      message: 'Error deleting media',
+      error: err.message 
+    });
+  }
+};
+
+// Get user media
+exports.getUserMedia = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId).select('profile.media');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json(user.profile.media || []);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Update media order/arrangement
+exports.updateMediaOrder = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { mediaIds } = req.body; // Array of media IDs in new order
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Create a map for quick lookup
+    const mediaMap = new Map();
+    user.profile.media.forEach(item => mediaMap.set(item._id.toString(), item));
+
+    // Rebuild the media array in the new order
+    const newMediaArray = mediaIds.map(id => mediaMap.get(id)).filter(Boolean);
+
+    user.profile.media = newMediaArray;
+    await user.save();
+
+    res.status(200).json({ message: 'Media order updated successfully' });
+  } catch (err) {
+    console.error('Media order update error:', err);
+    res.status(500).json({ 
+      message: 'Error updating media order',
+      error: err.message 
+    });
+  }
+};
+
+// Media upload middleware
+exports.mediaUploadMiddleware = (req, res, next) => {
+  mediaUpload(req, res, function(err) {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ message: 'File size too large (max 10MB)' });
+      }
+      if (err.code === 'LIMIT_FILE_COUNT') {
+        return res.status(400).json({ message: 'Too many files (max 10)' });
+      }
+      return res.status(400).json({ message: 'File upload error' });
+    } else if (err) {
+      return res.status(500).json({ message: 'Server error' });
+    }
+    next();
+  });
 };

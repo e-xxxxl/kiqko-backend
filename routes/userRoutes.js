@@ -36,4 +36,23 @@ router.put('/online-status/:userId', profileController.updateOnlineStatus);
 
 router.get('/similar-users/:userId', profileController.getOtherUsers);
 
+
+
+// Media routes
+router.post('/:userId/media', 
+  profileController.mediaUploadMiddleware, 
+  profileController.uploadMedia
+);
+
+router.delete('/:userId/media/:mediaId', 
+  profileController.deleteMedia
+);
+
+router.get('/:userId/media', 
+  profileController.getUserMedia
+);
+
+router.put('/:userId/media/order', 
+  profileController.updateMediaOrder
+); 
 module.exports = router;

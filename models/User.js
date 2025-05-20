@@ -26,6 +26,12 @@ const userSchema = new mongoose.Schema({
     headline: String,
      compliment: String,
      about: String,
+     media: [{
+    url: String,
+    publicId: String,
+    mediaType: { type: String, enum: ['image', 'video'] },
+    uploadedAt: { type: Date, default: Date.now }
+  }],
      dealbreakers: {
   type: [String],
   

@@ -17,6 +17,10 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes); // ✅ Add this line
 // Make sure to import and use the profile routes
 
+app.use(cors({
+  origin: 'http://localhost:5173',
+  credentials: true
+}));
 
 // DB connection
 mongoose.connect(process.env.MONGO_URI, {
