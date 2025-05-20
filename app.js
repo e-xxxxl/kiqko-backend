@@ -9,11 +9,26 @@ const userRoutes = require('./routes/userRoutes'); // ✅ Import userRoutes
 const app = express();
 // https://kiqko-gulz.vercel.app
 // Middleware
+// Define your allowed origins in an array
+const allowedOrigins = [
+  'http://localhost:5173', // Your local development frontend
+  'https://kiqko-gulz.vercel.app', // Your Vercel deployed frontend
+  // Add any other origins here if needed
+];
+
 app.use(cors({
-  origin: 'https://kiqko-gulz.vercel.app', // Your frontend origin
-  credentials: true,               // Allow cookies/auth headers
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Best practice to explicitly list allowed methods
-  allowedHeaders: ['Content-Type', 'Authorization'], // Best practice to explicitly list allowed headers
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps or curl requests)
+    // or if the origin is in our allowedOrigins list
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json());
 
