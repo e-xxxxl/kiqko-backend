@@ -48,7 +48,9 @@ const userSchema = new mongoose.Schema({
     state: String,
     country: String
   }, lastActive: { type: Date, default: Date.now },
-  isOnline: { type: Boolean, default: false }
+  isOnline: { type: Boolean, default: false },
+ likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+likedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
 }, { timestamps: true });
 // Hash password before saving
 userSchema.pre('save', async function (next) {

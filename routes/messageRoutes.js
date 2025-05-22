@@ -33,6 +33,8 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       (error, result) => {
         if (error) {
           console.error('Cloudinary Error:', error);
+          console.log("Cloudinary Upload Result:", result);
+
           return res.status(500).json({ error: 'Upload failed' });
         }
         res.json({ url: result.secure_url });

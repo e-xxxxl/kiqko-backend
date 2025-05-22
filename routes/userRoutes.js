@@ -3,6 +3,7 @@ const router = express.Router();
 const userController = require('../controllers/userController');
 const profileController = require('../controllers/profileController');
 const onlineController = require('../controllers/onlineController');
+const User = require('../models/User'); // adjust path if different
 
 
 router.get('/profile/:id', userController.getUserProfile);
@@ -59,4 +60,73 @@ router.put('/:userId/media/order',
 
 router.get('/:userId/profile-status', profileController.getProfileVisibility);
 router.put('/:userId/hide-profile', profileController.updateProfileVisibility);
+
+
+router.post('/:userId/like', async (req, res) => {
+  try {
+    const currentUserId = req.body.userId;
+    const targetUserId = req.params.userId;
+
+    console.log('currentUserId:', currentUserId);
+    console.log('targetUserId:', targetUserId);
+    console.log('req.body:', req.body);
+    console.log('req.params:', req.params);
+
+    if (!currentUserId || !targetUserId) {
+      return res.status(400).json({ message: 'Missing user ID.' });
+    }
+
+    if (currentUserId === targetUserId) {
+      return res.status(400).json({ message: "You can't like yourself." });
+    }
+
+    const currentUser = await User.findById(currentUserId);
+    const targetUser = await User.findById(targetUserId);
+
+    if (!currentUser || !targetUser) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    if (currentUser.likes.includes(targetUserId)) {
+      return res.status(400).json({ message: 'Already liked this user.' });
+    }
+
+    currentUser.likes.push(targetUserId);
+    targetUser.likedBy.push(currentUserId);
+
+    await currentUser.save();
+    await targetUser.save();
+
+    res.status(200).json({ message: 'User liked successfully.' });
+
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// GET /api/users/likes/:userId
+router.get('/likes/:userId', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId).populate('likes');
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.status(200).json(user.likes);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET /api/users/liked-by/:userId
+router.get('/liked-by/:userId', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId).populate('likedBy', 'username profile.profilephoto createdAt');
+    res.json(user.likedBy);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to get users who liked you' });
+  }
+});
+
+
 module.exports = router;
