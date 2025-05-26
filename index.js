@@ -12,12 +12,9 @@ const server = http.createServer(app);
 // Set up Socket.IO server
 const io = new Server(server, {
   cors: {
-    origin: [
-      'http://localhost:5173',
-      'https://kiqko-gulz.vercel.app',
-    ],
-    methods: ['GET', 'POST'],
-    credentials: true,
+    origin: "*", // Allow all origins
+    methods: ["GET", "POST"],
+    credentials: false, // Must be false if origin is "*"
   },
 });
 

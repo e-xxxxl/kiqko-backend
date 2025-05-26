@@ -1,8 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const cloudinary = require('../cloudinary'); // You need to create this file
+const cloudinary = require('../cloudinary'); 
 const Message = require('../models/Message');
+const User = require('../models/User')
+
+// Add this route to your messageRoutes.js file
+const mongoose = require('mongoose');
 
 // Multer memory storage
 const storage = multer.memoryStorage();
