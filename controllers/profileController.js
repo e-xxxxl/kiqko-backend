@@ -274,33 +274,38 @@ exports.getOtherUsers = async (req, res) => {
   console.log('getOtherUsers called with userId:', req.params.userId);
   try {
     const userId = req.params.userId;
-
     const currentUser = await User.findById(userId);
-
+    
     if (!currentUser) {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    // Get current user's gender from either field
     const currentGender = currentUser.gender || currentUser.profile?.gender;
-
+    
     // Ensure current gender exists
     if (!currentGender) {
       return res.status(400).json({ message: 'Current user gender not defined' });
     }
 
+    // Determine opposite gender
+    const oppositeGender = currentGender.toLowerCase() === 'male' ? 'female' : 'male';
+    
     // Fetch users of opposite gender and verified
-    const similarUsers = await User.find({
+    const oppositeGenderUsers = await User.find({
       _id: { $ne: new mongoose.Types.ObjectId(userId) },
       isVerified: true, // ✅ Only include verified users
-      $and: [
-        { gender: { $ne: currentGender } },
-        { 'profile.gender': { $ne: currentGender } }
+      $or: [
+        { gender: { $regex: new RegExp(`^${oppositeGender}$`, 'i') } }, // Case insensitive match
+        { 'profile.gender': { $regex: new RegExp(`^${oppositeGender}$`, 'i') } }
       ]
-    });
+    }).select('-password -otp -otpExpires'); // Exclude sensitive data
 
-    res.json(similarUsers);
+    console.log(`Found ${oppositeGenderUsers.length} opposite gender users for ${currentGender} user`);
+    res.json(oppositeGenderUsers);
+    
   } catch (error) {
-    console.error(error);
+    console.error('Error in getOtherUsers:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
