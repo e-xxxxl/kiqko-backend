@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema({
     wantsKids: String,
     hereFor: String,
     wouldRelocate: String,
-    vaccinationStatus: String,
+     vaccinationStatus: { type: String },
     headline: String,
      compliment: String,
      about: String,
