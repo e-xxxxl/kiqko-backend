@@ -128,5 +128,24 @@ router.get('/liked-by/:userId', async (req, res) => {
   }
 });
 
+// POST /api/users/vaccination/:userId
+router.post('/vaccination/:userId', async (req, res) => {
+  const { userId } = req.params;
+  const { vaccinationStatus } = req.body;
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    user.profile.vaccinationStatus = vaccinationStatus;
+    await user.save();
+
+    res.status(200).json({ success: true, message: 'Vaccination status updated' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 
 module.exports = router;
