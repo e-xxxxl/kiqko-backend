@@ -1,5 +1,11 @@
+// 
+
+
+
+
+
+
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
 
@@ -9,10 +15,9 @@ const messageRoutes = require('./routes/messageRoutes');
 
 const app = express();
 
-// Allow CORS from all origins
 app.use(cors({
-  origin: true,  // or you can use '*' but origin: true is better for credentials
-  credentials: true,
+  origin: ['http://localhost:5173', 'http://localhost:5000'],
+  credentials: false,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
@@ -24,12 +29,10 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/messages', messageRoutes);
 
-// Database Connection
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('MongoDB connected'))
-.catch(err => console.log('MongoDB connection error:', err));
+// 404 handler
+app.use((req, res) => {
+  console.log(`Route not found: ${req.method} ${req.url}`);
+  res.status(404).json({ message: 'Route not found' });
+});
 
 module.exports = app;

@@ -1,20 +1,75 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+// const userSchema = new mongoose.Schema({
+//   username: { type: String, required: true },
+//   email: { type: String, required: true, unique: true },
+//   password: { type: String, required: true },
+//     gender: { type: String },
+//   otp: String,
+//   otpExpires: Date,
+//   isVerified: {
+//     type: Boolean,
+//     default: false,
+//   }, profile: {
+//     gender: String,
+//     birthDate: Date,
+//      age: Number,
+//     ethnicity: String,
+//     maritalStatus: String,
+//     height: String,
+//     bodyType: String,
+//     hasKids: String,
+//     wantsKids: String,
+//     hereFor: String,
+//     wouldRelocate: String,
+//      vaccinationStatus: { type: String },
+//     headline: String,
+//      compliment: String,
+//      about: String,
+//       isHidden: { 
+//     type: Boolean,
+//     default: false 
+//   },
+//      media: [{
+//     url: String,
+//     publicId: String,
+//     mediaType: { type: String, enum: ['image', 'video'] },
+//     uploadedAt: { type: Date, default: Date.now }
+//   }],
+//      dealbreakers: {
+//   type: [String],
+  
+//   default: []
+// },profilephoto: String,          // Add this
+//  profilephotoPublicId: String 
+
+//   }, location: {
+//     city: String,
+//     state: String,
+//     country: String
+//   }, lastActive: { type: Date, default: Date.now },
+//   isOnline: { type: Boolean, default: false },
+//  likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+// likedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+// }, { timestamps: true });
+
+
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-    gender: { type: String },
+  gender: { type: String },
   otp: String,
   otpExpires: Date,
   isVerified: {
     type: Boolean,
     default: false,
-  }, profile: {
+  },
+  profile: {
     gender: String,
     birthDate: Date,
-     age: Number,
+    age: Number,
     ethnicity: String,
     maritalStatus: String,
     height: String,
@@ -23,36 +78,65 @@ const userSchema = new mongoose.Schema({
     wantsKids: String,
     hereFor: String,
     wouldRelocate: String,
-     vaccinationStatus: { type: String },
+    vaccinationStatus: { type: String },
     headline: String,
-     compliment: String,
-     about: String,
-      isHidden: { 
-    type: Boolean,
-    default: false 
+    compliment: String,
+    about: String,
+    isHidden: { 
+      type: Boolean,
+      default: false 
+    },
+    media: [{
+      url: String,
+      publicId: String,
+      mediaType: { type: String, enum: ['image', 'video'] },
+      uploadedAt: { type: Date, default: Date.now }
+    }],
+    dealbreakers: {
+      type: [String],
+      default: []
+    },
+    profilephoto: String,
+    profilephotoPublicId: String 
   },
-     media: [{
-    url: String,
-    publicId: String,
-    mediaType: { type: String, enum: ['image', 'video'] },
-    uploadedAt: { type: Date, default: Date.now }
-  }],
-     dealbreakers: {
-  type: [String],
-  
-  default: []
-},profilephoto: String,          // Add this
- profilephotoPublicId: String 
-
-  }, location: {
+  location: {
     city: String,
     state: String,
     country: String
-  }, lastActive: { type: Date, default: Date.now },
+  },
+  lastActive: { type: Date, default: Date.now },
   isOnline: { type: Boolean, default: false },
- likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-likedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  likedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  
+  // Add this new section for search preferences
+  searchPreferences: {
+    distanceSearch: {
+      city: String,
+      state: String,
+      country: String,
+      zipCode: String
+    },
+    seekingGender: String,
+    ageRange: {
+      min: Number,
+      max: Number
+    },
+    ethnicity: [String],
+    maritalStatus: [String],
+    heightRange: {
+      min: String,
+      max: String
+    },
+    bodyType: [String],
+    hasKids: String,
+    wantsKids: [String],
+    hereFor: [String],
+    wouldRelocate: String,
+    lastUpdated: { type: Date, default: Date.now }
+  }
 }, { timestamps: true });
+
 // Hash password before saving
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
