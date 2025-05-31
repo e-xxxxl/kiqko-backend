@@ -130,10 +130,10 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173", "http://localhost:5000"],
-    methods: ["GET", "POST"],
-    credentials: false,
-  },
+    origin: "*", // Allow all origins
+    methods: ["GET", "POST"], // Allowed HTTP methods
+    // credentials: false (can be removed when origin is "*")
+  }
 });
 
 // Initialize onlineUsers and userLastSeen

@@ -16,14 +16,12 @@ const messageRoutes = require('./routes/messageRoutes');
 const app = express();
 
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5000'],
-  credentials: false,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  origin: '*', // Allow all origins
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Allowed methods
+  allowedHeaders: ['Content-Type', 'Authorization'] // Allowed headers
 }));
 
 app.use(express.json());
-
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
