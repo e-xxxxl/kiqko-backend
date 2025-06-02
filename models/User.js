@@ -89,9 +89,16 @@ const userSchema = new mongoose.Schema({
     media: [{
       url: String,
       publicId: String,
-      mediaType: { type: String, enum: ['image', 'video'] },
+      mediaType: { type: String, enum: ['image'] },
       uploadedAt: { type: Date, default: Date.now }
-    }],
+    }], video: [
+        {
+          url: String,
+          publicId: String,
+          mediaType: { type: String, enum: ["video"], default: "video" }, // Dedicated for videos
+          uploadedAt: { type: Date, default: Date.now },
+        },
+      ],
     dealbreakers: {
       type: [String],
       default: []
@@ -108,6 +115,8 @@ const userSchema = new mongoose.Schema({
   isOnline: { type: Boolean, default: false },
   likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   likedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  // In your userSchema
+blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   
   // Add this new section for search preferences
   searchPreferences: {

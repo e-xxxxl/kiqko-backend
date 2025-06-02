@@ -58,6 +58,23 @@ router.get('/:userId/media',
 router.put('/:userId/media/order', 
   profileController.updateMediaOrder
 ); 
+// Video upload route
+router.post(
+  "/:userId/video",
+  profileController.videoUploadMiddleware,
+  profileController.uploadVideo
+);
+router.delete("/:userId/video/:publicId", profileController.deleteVideo);
+
+
+ router.get("/:userId/getVideos", profileController.getUserVideos);
+// Block user routes
+router.post('/block-user', profileController.blockUser);
+router.get('/blocked-users/:userId', profileController.getBlockedUsers);
+router.delete('/unblock-user', profileController.unblockUser);
+
+router.get('/live-users', profileController.getLiveUsers);
+
 
 
 router.get('/:userId/profile-status', profileController.getProfileVisibility);
