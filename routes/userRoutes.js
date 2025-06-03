@@ -314,49 +314,75 @@ router.get('/search-matches/:userId', async (req, res) => {
     const query = {
       _id: { $ne: userId }, // Exclude the current user
       'profile.isHidden': false, // Only include visible profiles
+      $and: [], // To store conditions for at least two matches
     };
 
-    // Add search criteria
+    // Helper function to add conditions to query
+    const conditions = [];
+
+    // Add search criteria if they exist in searchPreferences
     if (searchPrefs.seekingGender) {
-      query['profile.gender'] = searchPrefs.seekingGender;
+      conditions.push({ 'profile.gender': searchPrefs.seekingGender });
     }
     if (searchPrefs.ageRange?.min || searchPrefs.ageRange?.max) {
-      query['profile.age'] = {
-        $gte: searchPrefs.ageRange.min || 18,
-        $lte: searchPrefs.ageRange.max || 80,
-      };
+      conditions.push({
+        'profile.age': {
+          $gte: searchPrefs.ageRange.min || 18,
+          $lte: searchPrefs.ageRange.max || 80,
+        },
+      });
     }
     if (searchPrefs.ethnicity?.length) {
-      query['profile.ethnicity'] = { $in: searchPrefs.ethnicity };
+      conditions.push({ 'profile.ethnicity': { $in: searchPrefs.ethnicity } });
     }
     if (searchPrefs.maritalStatus?.length) {
-      query['profile.maritalStatus'] = { $in: searchPrefs.maritalStatus };
+      conditions.push({ 'profile.maritalStatus': { $in: searchPrefs.maritalStatus } });
     }
     if (searchPrefs.heightRange?.min || searchPrefs.heightRange?.max) {
-      query['profile.height'] = {
-        $gte: searchPrefs.heightRange.min || '0',
-        $lte: searchPrefs.heightRange.max || '999',
-      };
+      conditions.push({
+        'profile.height': {
+          $gte: searchPrefs.heightRange.min || '0',
+          $lte: searchPrefs.heightRange.max || '999',
+        },
+      });
     }
     if (searchPrefs.bodyType?.length) {
-      query['profile.bodyType'] = { $in: searchPrefs.bodyType };
+      conditions.push({ 'profile.bodyType': { $in: searchPrefs.bodyType } });
     }
     if (searchPrefs.hasKids) {
-      query['profile.hasKids'] = searchPrefs.hasKids;
+      conditions.push({ 'profile.hasKids': searchPrefs.hasKids });
     }
     if (searchPrefs.wantsKids?.length) {
-      query['profile.wantsKids'] = { $in: searchPrefs.wantsKids };
+      conditions.push({ 'profile.wantsKids': { $in: searchPrefs.wantsKids } });
     }
     if (searchPrefs.hereFor?.length) {
-      query['profile.hereFor'] = { $in: searchPrefs.hereFor };
+      conditions.push({ 'profile.hereFor': { $in: searchPrefs.hereFor } });
     }
     if (searchPrefs.wouldRelocate) {
-      query['profile.wouldRelocate'] = searchPrefs.wouldRelocate;
+      conditions.push({ 'profile.wouldRelocate': searchPrefs.wouldRelocate });
     }
     if (searchPrefs.distanceSearch?.city || searchPrefs.distanceSearch?.state || searchPrefs.distanceSearch?.country) {
-      query['location.city'] = searchPrefs.distanceSearch.city || { $exists: true };
-      query['location.state'] = searchPrefs.distanceSearch.state || { $exists: true };
-      query['location.country'] = searchPrefs.distanceSearch.country || { $exists: true };
+      const locationConditions = [];
+      if (searchPrefs.distanceSearch.city) {
+        locationConditions.push({ 'location.city': searchPrefs.distanceSearch.city });
+      }
+      if (searchPrefs.distanceSearch.state) {
+        locationConditions.push({ 'location.state': searchPrefs.distanceSearch.state });
+      }
+      if (searchPrefs.distanceSearch.country) {
+        locationConditions.push({ 'location.country': searchPrefs.distanceSearch.country });
+      }
+      if (locationConditions.length > 0) {
+        conditions.push({ $or: locationConditions });
+      }
+    }
+
+    // Ensure at least two criteria match
+    if (conditions.length >= 2) {
+      query.$and.push({ $or: conditions });
+    } else {
+      // If fewer than 2 criteria, return empty results
+      return res.status(200).json({ matches: [] });
     }
 
     const matches = await User.find(query).select(
@@ -369,28 +395,24 @@ router.get('/search-matches/:userId', async (req, res) => {
       let totalCriteria = 0;
 
       // Helper function to check if criterion matches
-      const checkCriterion = (userValue, searchValue, isArray = false) => {
+      const checkCriterion = (userValue, searchValue, isArray = false, isRange = false) => {
         if (!searchValue || (Array.isArray(searchValue) && !searchValue.length)) return false;
         totalCriteria++;
+        if (isRange) {
+          return userValue >= (searchValue.min || 0) && userValue <= (searchValue.max || Infinity);
+        }
         if (isArray) {
           return Array.isArray(userValue) ? userValue.some(val => searchValue.includes(val)) : searchValue.includes(userValue);
-        }
-        if (typeof searchValue === 'object' && !Array.isArray(searchValue)) {
-          // Handle range-based criteria (age, height)
-          if (userValue >= (searchValue.min || 0) && userValue <= (searchValue.max || Infinity)) {
-            return true;
-          }
-          return false;
         }
         return userValue === searchValue;
       };
 
       // Count matching criteria
       if (checkCriterion(match.profile?.gender, searchPrefs.seekingGender)) matchCount++;
-      if (checkCriterion(match.profile?.age, searchPrefs.ageRange)) matchCount++;
+      if (checkCriterion(match.profile?.age, searchPrefs.ageRange, false, true)) matchCount++;
       if (checkCriterion(match.profile?.ethnicity, searchPrefs.ethnicity, true)) matchCount++;
       if (checkCriterion(match.profile?.maritalStatus, searchPrefs.maritalStatus, true)) matchCount++;
-      if (checkCriterion(match.profile?.height, searchPrefs.heightRange)) matchCount++;
+      if (checkCriterion(match.profile?.height, searchPrefs.heightRange, false, true)) matchCount++;
       if (checkCriterion(match.profile?.bodyType, searchPrefs.bodyType, true)) matchCount++;
       if (checkCriterion(match.profile?.hasKids, searchPrefs.hasKids)) matchCount++;
       if (checkCriterion(match.profile?.wantsKids, searchPrefs.wantsKids, true)) matchCount++;
@@ -408,7 +430,7 @@ router.get('/search-matches/:userId', async (req, res) => {
       if (matchCount >= 2) {
         return {
           ...match.toObject(),
-          matchPercentage: Math.round(matchPercentage)
+          matchPercentage: Math.round(matchPercentage),
         };
       }
       return null;
