@@ -295,6 +295,157 @@ router.post('/search-filters', async (req, res) => {
 });
 
 
+// router.get('/search-matches/:userId', async (req, res) => {
+//   try {
+//     const { userId } = req.params;
+
+//     if (!mongoose.Types.ObjectId.isValid(userId)) {
+//       return res.status(400).json({ message: 'Invalid user ID' });
+//     }
+
+//     const user = await User.findById(userId);
+//     if (!user) {
+//       return res.status(404).json({ message: 'User not found' });
+//     }
+
+//     const searchPrefs = user.searchPreferences;
+
+//     // Build query for matching users
+//     const query = {
+//       _id: { $ne: userId }, // Exclude the current user
+//       'profile.isHidden': false, // Only include visible profiles
+//       $and: [], // To store conditions for at least two matches
+//     };
+
+//     // Helper function to add conditions to query
+//     const conditions = [];
+
+//     // Add search criteria if they exist in searchPreferences
+//     if (searchPrefs.seekingGender) {
+//       conditions.push({ 'profile.gender': searchPrefs.seekingGender });
+//     }
+//     if (searchPrefs.ageRange?.min || searchPrefs.ageRange?.max) {
+//       conditions.push({
+//         'profile.age': {
+//           $gte: searchPrefs.ageRange.min || 18,
+//           $lte: searchPrefs.ageRange.max || 80,
+//         },
+//       });
+//     }
+//     if (searchPrefs.ethnicity?.length) {
+//       conditions.push({ 'profile.ethnicity': { $in: searchPrefs.ethnicity } });
+//     }
+//     if (searchPrefs.maritalStatus?.length) {
+//       conditions.push({ 'profile.maritalStatus': { $in: searchPrefs.maritalStatus } });
+//     }
+//     if (searchPrefs.heightRange?.min || searchPrefs.heightRange?.max) {
+//       conditions.push({
+//         'profile.height': {
+//           $gte: searchPrefs.heightRange.min || '0',
+//           $lte: searchPrefs.heightRange.max || '999',
+//         },
+//       });
+//     }
+//     if (searchPrefs.bodyType?.length) {
+//       conditions.push({ 'profile.bodyType': { $in: searchPrefs.bodyType } });
+//     }
+//     if (searchPrefs.hasKids) {
+//       conditions.push({ 'profile.hasKids': searchPrefs.hasKids });
+//     }
+//     if (searchPrefs.wantsKids?.length) {
+//       conditions.push({ 'profile.wantsKids': { $in: searchPrefs.wantsKids } });
+//     }
+//     if (searchPrefs.hereFor?.length) {
+//       conditions.push({ 'profile.hereFor': { $in: searchPrefs.hereFor } });
+//     }
+//     if (searchPrefs.wouldRelocate) {
+//       conditions.push({ 'profile.wouldRelocate': searchPrefs.wouldRelocate });
+//     }
+//     if (searchPrefs.distanceSearch?.city || searchPrefs.distanceSearch?.state || searchPrefs.distanceSearch?.country) {
+//       const locationConditions = [];
+//       if (searchPrefs.distanceSearch.city) {
+//         locationConditions.push({ 'location.city': searchPrefs.distanceSearch.city });
+//       }
+//       if (searchPrefs.distanceSearch.state) {
+//         locationConditions.push({ 'location.state': searchPrefs.distanceSearch.state });
+//       }
+//       if (searchPrefs.distanceSearch.country) {
+//         locationConditions.push({ 'location.country': searchPrefs.distanceSearch.country });
+//       }
+//       if (locationConditions.length > 0) {
+//         conditions.push({ $or: locationConditions });
+//       }
+//     }
+
+//     // Ensure at least two criteria match
+//     if (conditions.length >= 2) {
+//       query.$and.push({ $or: conditions });
+//     } else {
+//       // If fewer than 2 criteria, return empty results
+//       return res.status(200).json({ matches: [] });
+//     }
+
+//     const matches = await User.find(query).select(
+//       'username profile location'
+//     );
+
+//     // Calculate match percentage for each user
+//     const matchesWithPercentage = matches.map(match => {
+//       let matchCount = 0;
+//       let totalCriteria = 0;
+
+//       // Helper function to check if criterion matches
+//       const checkCriterion = (userValue, searchValue, isArray = false, isRange = false) => {
+//         if (!searchValue || (Array.isArray(searchValue) && !searchValue.length)) return false;
+//         totalCriteria++;
+//         if (isRange) {
+//           return userValue >= (searchValue.min || 0) && userValue <= (searchValue.max || Infinity);
+//         }
+//         if (isArray) {
+//           return Array.isArray(userValue) ? userValue.some(val => searchValue.includes(val)) : searchValue.includes(userValue);
+//         }
+//         return userValue === searchValue;
+//       };
+
+//       // Count matching criteria
+//       if (checkCriterion(match.profile?.gender, searchPrefs.seekingGender)) matchCount++;
+//       if (checkCriterion(match.profile?.age, searchPrefs.ageRange, false, true)) matchCount++;
+//       if (checkCriterion(match.profile?.ethnicity, searchPrefs.ethnicity, true)) matchCount++;
+//       if (checkCriterion(match.profile?.maritalStatus, searchPrefs.maritalStatus, true)) matchCount++;
+//       if (checkCriterion(match.profile?.height, searchPrefs.heightRange, false, true)) matchCount++;
+//       if (checkCriterion(match.profile?.bodyType, searchPrefs.bodyType, true)) matchCount++;
+//       if (checkCriterion(match.profile?.hasKids, searchPrefs.hasKids)) matchCount++;
+//       if (checkCriterion(match.profile?.wantsKids, searchPrefs.wantsKids, true)) matchCount++;
+//       if (checkCriterion(match.profile?.hereFor, searchPrefs.hereFor, true)) matchCount++;
+//       if (checkCriterion(match.profile?.wouldRelocate, searchPrefs.wouldRelocate)) matchCount++;
+//       if (
+//         checkCriterion(match.location?.city, searchPrefs.distanceSearch?.city) ||
+//         checkCriterion(match.location?.state, searchPrefs.distanceSearch?.state) ||
+//         checkCriterion(match.location?.country, searchPrefs.distanceSearch?.country)
+//       ) matchCount++;
+
+//       const matchPercentage = totalCriteria ? (matchCount / totalCriteria) * 100 : 0;
+
+//       // Only include matches with at least 2 criteria matching
+//       if (matchCount >= 2) {
+//         return {
+//           ...match.toObject(),
+//           matchPercentage: Math.round(matchPercentage),
+//         };
+//       }
+//       return null;
+//     }).filter(match => match !== null);
+
+//     // Sort matches by percentage (descending)
+//     matchesWithPercentage.sort((a, b) => b.matchPercentage - a.matchPercentage);
+
+//     res.status(200).json({ matches: matchesWithPercentage });
+//   } catch (error) {
+//     console.error('Error fetching matches:', error);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
+
 router.get('/search-matches/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
@@ -310,20 +461,23 @@ router.get('/search-matches/:userId', async (req, res) => {
 
     const searchPrefs = user.searchPreferences;
 
+    // Ensure seekingGender is specified
+    if (!searchPrefs.seekingGender) {
+      return res.status(400).json({ message: 'Gender preference is required for matching' });
+    }
+
     // Build query for matching users
     const query = {
       _id: { $ne: userId }, // Exclude the current user
       'profile.isHidden': false, // Only include visible profiles
-      $and: [], // To store conditions for at least two matches
+      'profile.gender': searchPrefs.seekingGender, // Mandatory gender match
+      $and: [], // To store conditions for additional matches
     };
 
     // Helper function to add conditions to query
     const conditions = [];
 
-    // Add search criteria if they exist in searchPreferences
-    if (searchPrefs.seekingGender) {
-      conditions.push({ 'profile.gender': searchPrefs.seekingGender });
-    }
+    // Add other search criteria if they exist in searchPreferences
     if (searchPrefs.ageRange?.min || searchPrefs.ageRange?.max) {
       conditions.push({
         'profile.age': {
@@ -377,11 +531,11 @@ router.get('/search-matches/:userId', async (req, res) => {
       }
     }
 
-    // Ensure at least two criteria match
-    if (conditions.length >= 2) {
+    // Ensure at least one additional criterion matches (since gender is already mandatory)
+    if (conditions.length >= 1) {
       query.$and.push({ $or: conditions });
     } else {
-      // If fewer than 2 criteria, return empty results
+      // If no additional criteria are specified, return empty results
       return res.status(200).json({ matches: [] });
     }
 
@@ -408,7 +562,9 @@ router.get('/search-matches/:userId', async (req, res) => {
       };
 
       // Count matching criteria
-      if (checkCriterion(match.profile?.gender, searchPrefs.seekingGender)) matchCount++;
+      // Gender is always a match due to query, so count it
+      matchCount++;
+      totalCriteria++;
       if (checkCriterion(match.profile?.age, searchPrefs.ageRange, false, true)) matchCount++;
       if (checkCriterion(match.profile?.ethnicity, searchPrefs.ethnicity, true)) matchCount++;
       if (checkCriterion(match.profile?.maritalStatus, searchPrefs.maritalStatus, true)) matchCount++;
@@ -426,15 +582,12 @@ router.get('/search-matches/:userId', async (req, res) => {
 
       const matchPercentage = totalCriteria ? (matchCount / totalCriteria) * 100 : 0;
 
-      // Only include matches with at least 2 criteria matching
-      if (matchCount >= 2) {
-        return {
-          ...match.toObject(),
-          matchPercentage: Math.round(matchPercentage),
-        };
-      }
-      return null;
-    }).filter(match => match !== null);
+      // Since gender is mandatory and we need at least one more criterion, matchCount >= 2 is ensured
+      return {
+        ...match.toObject(),
+        matchPercentage: Math.round(matchPercentage),
+      };
+    });
 
     // Sort matches by percentage (descending)
     matchesWithPercentage.sort((a, b) => b.matchPercentage - a.matchPercentage);
