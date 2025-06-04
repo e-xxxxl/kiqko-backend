@@ -403,24 +403,19 @@ exports.updateOnlineStatus = async (req, res) => {
 exports.uploadMedia = async (req, res) => {
   try {
     const userId = req.params.userId;
-    const files = req.files; // Using multer's array upload
-    
+    const files = req.files;
+
     if (!files || files.length === 0) {
       return res.status(400).json({ message: 'No files uploaded' });
     }
 
     const uploadedMedia = [];
-    
-    // Process each file
-    for (const file of files) {
-      // Convert buffer to data URI for Cloudinary
-      const b64 = Buffer.from(file.buffer).toString("base64");
-      const dataURI = "data:" + file.mimetype + ";base64," + b64;
 
-      // Determine resource type based on mimetype
+    for (const file of files) {
+      const b64 = Buffer.from(file.buffer).toString("base64");
+      const dataURI = `data:${file.mimetype};base64,${b64}`;
       const resourceType = file.mimetype.startsWith('video/') ? 'video' : 'image';
 
-      // Upload to Cloudinary
       const result = await cloudinary.uploader.upload(dataURI, {
         folder: 'user-media',
         resource_type: resourceType
@@ -433,29 +428,38 @@ exports.uploadMedia = async (req, res) => {
       });
     }
 
-    // Update user's media array
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { $push: { 'profile.media': { $each: uploadedMedia } } },
-      { new: true }
-    );
+    // Update user's media
+    const user = await User.findById(userId);
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    // Push uploaded media
+    user.profile.media.push(...uploadedMedia);
+
+    // Count only images for verification
+    const imageCount = user.profile.media.filter((m) => m.mediaType === 'image').length;
+
+    // Update isImgVerified field based on image count
+    user.isImgVerified = imageCount > 4;
+
+    await user.save();
+
     res.status(200).json({
       message: 'Media uploaded successfully',
-      media: uploadedMedia
+      media: uploadedMedia,
+      isImgVerified: user.isImgVerified
     });
   } catch (err) {
     console.error('Media upload error:', err);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Error uploading media',
-      error: err.message 
+      error: err.message
     });
   }
 };
+
 
 // Delete media
 exports.deleteMedia = async (req, res) => {
@@ -480,9 +484,17 @@ exports.deleteMedia = async (req, res) => {
 
     // Remove from user's media array
     user.profile.media.pull(mediaId);
+
+    // Update isImgVerified: true if more than 4 images remain
+    const imageCount = user.profile.media.filter(m => m.mediaType === 'image').length;
+    user.isImgVerified = imageCount > 4;
+
     await user.save();
 
-    res.status(200).json({ message: 'Media deleted successfully' });
+    res.status(200).json({ 
+      message: 'Media deleted successfully',
+      isImgVerified: user.isImgVerified 
+    });
   } catch (err) {
     console.error('Media delete error:', err);
     res.status(500).json({ 

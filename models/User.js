@@ -65,7 +65,10 @@ const userSchema = new mongoose.Schema({
   isVerified: {
     type: Boolean,
     default: false,
-  },
+  },isImgVerified: {
+  type: Boolean,
+  default: false,
+},
   profile: {
     gender: String,
     birthDate: Date,
@@ -148,11 +151,20 @@ blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
+  // Only hash the password if it has been modified
+  if (this.isModified('password')) {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+  }
+
+  // Automatically set isImgVerified based on image count
+  if (this.profile && Array.isArray(this.profile.media)) {
+    this.isImgVerified = this.profile.media.length > 4;
+  }
+
   next();
 });
+
 
 // Compare entered password with hashed password
 userSchema.methods.comparePassword = async function (enteredPassword) {
