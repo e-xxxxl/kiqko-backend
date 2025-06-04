@@ -82,6 +82,9 @@ exports.login = async (req, res) => {
 
     // Login success – return token or session
     res.status(200).json({ success: true, message: 'Login successful', user: user._id });
+     // Update lastActive
+    user.lastActive = new Date();
+    await user.save();
     
 
   } catch (error) {

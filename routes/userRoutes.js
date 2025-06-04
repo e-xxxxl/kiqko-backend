@@ -8,6 +8,24 @@ const ProfileView = require('../models/ProfileView');
 const mongoose = require('mongoose');
 
 
+
+router.get('/user/:id', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('createdAt lastActive');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    console.log('Fetched user:', user); // Debug: Log the user data
+    res.json({
+      createdAt: user.createdAt,
+      lastActive: user.lastActive,
+    });
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 router.get('/profile/:id', userController.getUserProfile);
 router.delete('/delete/:id', userController.deleteUser);
 router.put('/:userId', profileController.updateProfile);
